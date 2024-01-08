@@ -1,6 +1,7 @@
 import tkinter as tk
 import hashlib
 import secrets
+import string
 
 def convertir_a_mayusculas():
     entrada_texto = entrada_var.get()
@@ -20,22 +21,28 @@ def alternar_mayusculas_minusculas():
     resultado_var.set(resultado)
     actualizar_texto(resultado, texto_resultado_texto)
 
-def generar_contrasena_encriptada(algoritmo):
-    entrada_texto = entrada_var.get()
-    # Usar un salt aleatorio para mayor seguridad
-    salt = secrets.token_hex(16)
-    contrasena = entrada_texto.encode('utf-8') + salt.encode('utf-8')
 
-    if algoritmo == "SHA-256":
-        hashed_contrasena = hashlib.sha256(contrasena).hexdigest()
-    elif algoritmo == "SHA-512":
-        hashed_contrasena = hashlib.sha512(contrasena).hexdigest()
-    else:
-        # En caso de algoritmo no reconocido, usar SHA-256 por defecto
-        hashed_contrasena = hashlib.sha256(contrasena).hexdigest()
+def generar_contrasena_aleatoria(encriptar=False, algoritmo=None):
+    longitud = 16  # Puedes ajustar la longitud según tus preferencias
+    caracteres = string.ascii_letters + string.digits + string.punctuation
+    contrasena_aleatoria = ''.join(secrets.choice(caracteres) for _ in range(longitud))
+    
+    if encriptar and algoritmo:
+        salt = secrets.token_hex(16)
+        contrasena = contrasena_aleatoria.encode('utf-8') + salt.encode('utf-8')
 
-    resultado_var.set(hashed_contrasena)
-    actualizar_texto(hashed_contrasena, texto_resultado_contrasena)
+        if algoritmo == "SHA-256":
+            hashed_contrasena = hashlib.sha256(contrasena).hexdigest()
+        elif algoritmo == "SHA-512":
+            hashed_contrasena = hashlib.sha512(contrasena).hexdigest()
+        else:
+            # En caso de algoritmo no reconocido, usar SHA-256 por defecto
+            hashed_contrasena = hashlib.sha256(contrasena).hexdigest()
+
+        contrasena_aleatoria = hashed_contrasena
+
+    resultado_var.set(contrasena_aleatoria)
+    actualizar_texto(contrasena_aleatoria, texto_resultado_contrasena)
 
 def actualizar_texto(texto, texto_widget):
     texto_widget.config(state=tk.NORMAL)
@@ -73,19 +80,21 @@ texto_resultado_texto = tk.Text(ventana, height=3, width=40, state=tk.DISABLED)
 texto_resultado_texto.pack(pady=10)
 
 # Etiqueta y botones para generador de contraseñas
-etiqueta_generador = tk.Label(ventana, text="Generador de Contraseñas Encriptadas:")
+etiqueta_generador = tk.Label(ventana, text="Generador de Contraseñas:")
 etiqueta_generador.pack(pady=10)
 
-boton_sha256 = tk.Button(ventana, text="Generar SHA-256", command=lambda: generar_contrasena_encriptada("SHA-256"))
-boton_sha256.pack(pady=5)
+boton_generar_aleatoria = tk.Button(ventana, text="Generar Contraseña Aleatoria", command=lambda: generar_contrasena_aleatoria(encriptar=False))
+boton_generar_aleatoria.pack(pady=5)
 
-boton_sha512 = tk.Button(ventana, text="Generar SHA-512", command=lambda: generar_contrasena_encriptada("SHA-512"))
-boton_sha512.pack(pady=5)
+boton_encriptar_aleatoria_sha256 = tk.Button(ventana, text="Encriptar Aleatoria (SHA-256)", command=lambda: generar_contrasena_aleatoria(encriptar=True, algoritmo="SHA-256"))
+boton_encriptar_aleatoria_sha256.pack(pady=5)
+
+boton_encriptar_aleatoria_sha512 = tk.Button(ventana, text="Encriptar Aleatoria (SHA-512)", command=lambda: generar_contrasena_aleatoria(encriptar=True, algoritmo="SHA-512"))
+boton_encriptar_aleatoria_sha512.pack(pady=5)
 
 # Crear Text para mostrar el resultado de las contraseñas encriptadas
 texto_resultado_contrasena = tk.Text(ventana, height=3, width=40, state=tk.DISABLED)
 texto_resultado_contrasena.pack(pady=10)
-
 
 # Iniciar el bucle principal de la interfaz gráfica
 ventana.mainloop()
