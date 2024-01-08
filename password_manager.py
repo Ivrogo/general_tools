@@ -2,6 +2,16 @@ import tkinter as tk
 import hashlib
 import secrets
 import string
+import pymongo
+
+#Establecemos conexion con MongoDB
+client = pymongo.MongoClient("mongodb://localhost:27017/")
+
+#Seleccionamos una base de datos
+db = client["gestor_contraseñas_db"]
+
+#Seleccionamos una coleccion
+contraseñas_collection = db["contraseñas"]
 
 def convertir_a_mayusculas():
     entrada_texto = entrada_var.get()
@@ -39,10 +49,14 @@ def generar_contrasena_aleatoria(encriptar=False, algoritmo=None):
             # En caso de algoritmo no reconocido, usar SHA-256 por defecto
             hashed_contrasena = hashlib.sha256(contrasena).hexdigest()
 
-        contrasena_aleatoria = hashed_contrasena
+        nueva_contraseña = {"sitio": "generada_aleatoriamente", "usuario": "usuario_generado", "contraseña": hashed_contrasena}
+        contraseñas_collection.insert_one(nueva_contraseña)
 
-    resultado_var.set(contrasena_aleatoria)
-    actualizar_texto(contrasena_aleatoria, texto_resultado_contrasena)
+        resultado_var.set(hashed_contrasena)
+        actualizar_texto(hashed_contrasena, texto_resultado_contrasena)
+    else:
+        resultado_var.set(contrasena_aleatoria)
+        actualizar_texto(contrasena_aleatoria, texto_resultado_contrasena)
 
 def actualizar_texto(texto, texto_widget):
     texto_widget.config(state=tk.NORMAL)
