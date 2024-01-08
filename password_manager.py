@@ -1,42 +1,35 @@
-import tkinter as tk
 import hashlib
 import secrets
 import string
 import pymongo
+from tkinter import Tk, Button, Text, StringVar
 
-#Establecemos conexion con MongoDB
+# Establecemos conexión con MongoDB
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 
-#Seleccionamos una base de datos
+# Seleccionamos una base de datos
 db = client["gestor_contraseñas_db"]
 
-#Seleccionamos una coleccion
+# Seleccionamos una colección
 contraseñas_collection = db["contraseñas"]
 
-def convertir_a_mayusculas():
-    entrada_texto = entrada_var.get()
-    resultado = entrada_texto.upper()
-    resultado_var.set(resultado)
-    actualizar_texto(resultado, texto_resultado_texto)
+# Crear la interfaz gráfica
+ventana = Tk()
+ventana.title("Gestor de Contraseñas")
 
-def convertir_a_minusculas():
-    entrada_texto = entrada_var.get()
-    resultado = entrada_texto.lower()
-    resultado_var.set(resultado)
-    actualizar_texto(resultado, texto_resultado_texto)
+# Var para almacenar la contraseña generada encriptada
+contrasena_actual = StringVar()
 
-def alternar_mayusculas_minusculas():
-    entrada_texto = entrada_var.get()
-    resultado = ''.join(c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(entrada_texto))
-    resultado_var.set(resultado)
-    actualizar_texto(resultado, texto_resultado_texto)
-
+def actualizar_texto(texto, widget):
+    widget.delete(1.0, "end")
+    widget.insert("end", texto)
 
 def generar_contrasena_aleatoria(encriptar=False, algoritmo=None):
-    longitud = 16  # Puedes ajustar la longitud según tus preferencias
+    longitud = 16
     caracteres = string.ascii_letters + string.digits + string.punctuation
     contrasena_aleatoria = ''.join(secrets.choice(caracteres) for _ in range(longitud))
     
+    # Si se especifica encriptar y algoritmo, encriptar la contraseña
     if encriptar and algoritmo:
         salt = secrets.token_hex(16)
         contrasena = contrasena_aleatoria.encode('utf-8') + salt.encode('utf-8')
@@ -49,66 +42,65 @@ def generar_contrasena_aleatoria(encriptar=False, algoritmo=None):
             # En caso de algoritmo no reconocido, usar SHA-256 por defecto
             hashed_contrasena = hashlib.sha256(contrasena).hexdigest()
 
-        nueva_contraseña = {"sitio": "generada_aleatoriamente", "usuario": "usuario_generado", "contraseña": hashed_contrasena}
-        contraseñas_collection.insert_one(nueva_contraseña)
-
-        resultado_var.set(hashed_contrasena)
+        # Mostrar la contraseña encriptada en la interfaz gráfica
+        contrasena_actual.set(hashed_contrasena)
         actualizar_texto(hashed_contrasena, texto_resultado_contrasena)
     else:
-        resultado_var.set(contrasena_aleatoria)
+        # Mostrar la contraseña generada en la interfaz gráfica
+        contrasena_actual.set(contrasena_aleatoria)
         actualizar_texto(contrasena_aleatoria, texto_resultado_contrasena)
 
-def actualizar_texto(texto, texto_widget):
-    texto_widget.config(state=tk.NORMAL)
-    texto_widget.delete(1.0, tk.END)
-    texto_widget.insert(tk.END, texto)
-    texto_widget.config(state=tk.DISABLED)
+    # Devolver la contraseña generada o encriptada
+    return contrasena_aleatoria if not encriptar else hashed_contrasena
 
-# Crear la ventana principal
-ventana = tk.Tk()
-ventana.title("Convertidor de Texto y Generador de Contraseñas")
+def guardar_contrasena(encriptar=False, algoritmo=None):
+    # Obtener la contraseña generada o encriptada
+    contrasena = contrasena_actual.get()
 
-# Crear variables de control
-entrada_var = tk.StringVar()
-resultado_var = tk.StringVar()
+    # Comprobar si la contraseña ya está encriptada
+    if not contrasena.isnumeric() and contrasena.isalnum():
+        # Si la contraseña ya está encriptada, no la encriptamos nuevamente
+        contrasena_encriptada = contrasena
+    else:
+        # Si la contraseña no está encriptada, la encriptamos
+        # Si se especifica encriptar y algoritmo, encriptar la contraseña
+        if encriptar and algoritmo:
+            salt = secrets.token_hex(16)
+            contrasena = contrasena.encode('utf-8') + salt.encode('utf-8')
 
-# Crear etiqueta y entrada de texto
-etiqueta = tk.Label(ventana, text="Ingrese un texto:")
-etiqueta.pack(pady=10)
+            if algoritmo == "SHA-256":
+                contrasena_encriptada = hashlib.sha256(contrasena).hexdigest()
+            elif algoritmo == "SHA-512":
+                contrasena_encriptada = hashlib.sha512(contrasena).hexdigest()
+            else:
+                # En caso de algoritmo no reconocido, usar SHA-256 por defecto
+                contrasena_encriptada = hashlib.sha256(contrasena).hexdigest()
+        else:
+            # Si no se especifica encriptar y algoritmo, usamos la contraseña tal cual
+            contrasena_encriptada = contrasena
 
-entrada_texto = tk.Entry(ventana, textvariable=entrada_var)
-entrada_texto.pack(pady=10)
+    # Guardar la contraseña encriptada en la colección de MongoDB
+    nueva_contraseña = {"sitio": "generada_manualmente", "usuario": "usuario_manual", "contraseña": contrasena_encriptada}
+    contraseñas_collection.insert_one(nueva_contraseña)
 
-# Crear botones para convertir
-boton_convertir_mayusculas = tk.Button(ventana, text="Convertir a Mayúsculas", command=convertir_a_mayusculas)
-boton_convertir_mayusculas.pack(pady=5)
+    # Mostrar un mensaje de éxito o realizar otras acciones según sea necesario
+    print("Contraseña guardada con éxito.")
 
-boton_convertir_minusculas = tk.Button(ventana, text="Convertir a Minúsculas", command=convertir_a_minusculas)
-boton_convertir_minusculas.pack(pady=5)
+# Crear un área de texto para mostrar la contraseña
+texto_resultado_contrasena = Text(ventana, height=2, width=50)
+texto_resultado_contrasena.pack()
 
-boton_alternar = tk.Button(ventana, text="Alternar Mayúsculas/Minúsculas", command=alternar_mayusculas_minusculas)
-boton_alternar.pack(pady=5)
+# Crear un botón para generar y guardar la contraseña encriptada
+boton_guardar_encriptada = Button(ventana, text="Guardar Contraseña Encriptada", command=lambda: guardar_contrasena(True, "SHA-256"))
+boton_guardar_encriptada.pack()
 
-# Crear Text para mostrar el resultado de las operaciones de texto
-texto_resultado_texto = tk.Text(ventana, height=3, width=40, state=tk.DISABLED)
-texto_resultado_texto.pack(pady=10)
+# Crear un botón para generar y mostrar una contraseña aleatoria encriptada
+boton_generar_encriptada = Button(ventana, text="Generar Contraseña Encriptada", command=lambda: generar_contrasena_aleatoria(True, "SHA-256"))
+boton_generar_encriptada.pack()
 
-# Etiqueta y botones para generador de contraseñas
-etiqueta_generador = tk.Label(ventana, text="Generador de Contraseñas:")
-etiqueta_generador.pack(pady=10)
+# Crear un botón para generar y mostrar una contraseña aleatoria sin encriptar
+boton_generar_normal = Button(ventana, text="Generar Contraseña Normal", command=lambda: generar_contrasena_aleatoria())
+boton_generar_normal.pack()
 
-boton_generar_aleatoria = tk.Button(ventana, text="Generar Contraseña Aleatoria", command=lambda: generar_contrasena_aleatoria(encriptar=False))
-boton_generar_aleatoria.pack(pady=5)
-
-boton_encriptar_aleatoria_sha256 = tk.Button(ventana, text="Encriptar Aleatoria (SHA-256)", command=lambda: generar_contrasena_aleatoria(encriptar=True, algoritmo="SHA-256"))
-boton_encriptar_aleatoria_sha256.pack(pady=5)
-
-boton_encriptar_aleatoria_sha512 = tk.Button(ventana, text="Encriptar Aleatoria (SHA-512)", command=lambda: generar_contrasena_aleatoria(encriptar=True, algoritmo="SHA-512"))
-boton_encriptar_aleatoria_sha512.pack(pady=5)
-
-# Crear Text para mostrar el resultado de las contraseñas encriptadas
-texto_resultado_contrasena = tk.Text(ventana, height=3, width=40, state=tk.DISABLED)
-texto_resultado_contrasena.pack(pady=10)
-
-# Iniciar el bucle principal de la interfaz gráfica
+# Ejecutar el bucle principal de la interfaz gráfica
 ventana.mainloop()
