@@ -25,7 +25,7 @@ def actualizar_texto(texto, widget):
     widget.insert("end", texto)
 
 def generar_contrasena_aleatoria(encriptar=False, algoritmo=None):
-    longitud = 16
+    longitud = 24
     caracteres = string.ascii_letters + string.digits + string.punctuation
     contrasena_aleatoria = ''.join(secrets.choice(caracteres) for _ in range(longitud))
     

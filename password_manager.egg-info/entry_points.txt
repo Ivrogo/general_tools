@@ -1,0 +1,3 @@
+[console_scripts]
+password-manager = password_manager:main
+
