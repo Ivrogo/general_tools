@@ -2,6 +2,7 @@ import hashlib
 import secrets
 import string
 import pymongo
+import tkinter as tk
 from tkinter import Tk, Button, Text, StringVar
 
 # Establecemos conexión con MongoDB
@@ -23,7 +24,23 @@ contrasena_actual = StringVar()
 def actualizar_texto(texto, widget):
     widget.delete(1.0, "end")
     widget.insert("end", texto)
+    
+def generar_usuario():
+    nombre = entry_nombre.get()
+    apellido = entry_apellido.get()
+    
+    # Convertimos tanto nombre y apellido a minusculas y quitamos los espacios. 
+    nombre = nombre.lower().replace(" ", "")
+    apellido = apellido.lower().replace(" ", "")
+    
+    # Creamos el usuario en base al nombre + apellidos intercalados por un punto
+    usuario = nombre + "." + apellido
+    
+     # Mostrar el nombre de usuario en la etiqueta
+    label_resultado.config(text=f"Tu nombre de usuario es: {usuario}")
+     
 
+    
 def generar_contrasena_aleatoria(encriptar=False, algoritmo=None):
     longitud = 24
     caracteres = string.ascii_letters + string.digits + string.punctuation
@@ -85,6 +102,22 @@ def guardar_contrasena(encriptar=False, algoritmo=None):
 
     # Mostrar un mensaje de éxito o realizar otras acciones según sea necesario
     print("Contraseña guardada con éxito.")
+
+# Crear y colocar widgets en la ventana
+tk.Label(ventana, text="Nombre:").pack()
+entry_nombre = tk.Entry(ventana)
+entry_nombre.pack()
+
+tk.Label(ventana, text="Apellido:").pack()
+entry_apellido = tk.Entry(ventana)
+entry_apellido.pack()
+
+btn_generar = tk.Button(ventana, text="Generar Usuario", command=generar_usuario)
+btn_generar.pack()
+
+label_resultado = tk.Label(ventana, text="")
+label_resultado.pack()
+
 
 # Crear un área de texto para mostrar la contraseña
 texto_resultado_contrasena = Text(ventana, height=2, width=50)
