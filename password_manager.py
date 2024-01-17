@@ -16,7 +16,7 @@ contraseñas_collection = db["contraseñas"]
 
 # Crear la interfaz gráfica
 ventana = Tk()
-ventana.title("Gestor de Contraseñas")
+ventana.title("General Tools")
 
 # Var para almacenar la contraseña generada encriptada
 contrasena_actual = StringVar()
